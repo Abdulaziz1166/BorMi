@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BorMi — Do'konlarni qidirish</title>
+<style>
+  :root{
+    --bg:#F0F7F4; --panel:#FFFFFF; --ink:#16241D; --muted:#5B6B62;
+    --primary:#1B4D3E; --primary-dark:#123529; --accent:#E8A33D;
+    --ok:#2E8B57; --bad:#C1443C; --line:#E3E9E5; --radius:16px;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  body{margin:0; font-family:system-ui,-apple-system,sans-serif; background:var(--bg); color:var(--ink); padding-bottom:50px;}
+  h1,h2,h3{margin:0;}
+  header{background:linear-gradient(135deg,var(--primary),var(--primary-dark)); color:#fff; padding:28px 20px 64px; border-radius:0 0 28px 28px;}
+  header h1{font-size:24px; font-weight:700; letter-spacing:-.3px;}
+  header p{margin:6px 0 0; font-size:13px; opacity:.8;}
+  .search-wrap{max-width:600px; margin:-40px auto 0; padding:0 16px;}
+  .search-box{background:var(--panel); border-radius:var(--radius); box-shadow:0 8px 28px rgba(20,40,30,.14); padding:14px;}
+  input[type=text]{
+    width:100%; padding:13px 14px; border:1.5px solid var(--line);
+    border-radius:10px; font-size:15px; outline:none; font-family:inherit; color:var(--ink);
+  }
+  input[type=text]:focus{border-color:var(--primary);}
+  main{max-width:600px; margin:20px auto 0; padding:0 16px;}
+  .sec-title{font-size:12px; text-transform:uppercase; letter-spacing:.07em; color:var(--muted); margin:20px 0 10px; font-weight:700;}
+  .store-card{
+    background:var(--panel); border-radius:var(--radius); padding:16px 18px;
+    margin-bottom:12px; box-shadow:0 2px 8px rgba(20,40,30,.06);
+    border:1.5px solid var(--line); cursor:pointer; transition:border-color .15s;
+  }
+  .store-card:active{border-color:var(--primary);}
+  .store-card h3{font-size:16px; font-weight:600;}
+  .store-addr{font-size:12.5px; color:var(--muted); margin-top:3px;}
+  .chevron{float:right; color:var(--muted); font-size:18px; margin-top:2px; transition:transform .2s;}
+  .chevron.open{transform:rotate(90deg);}
+  .prod-list{display:none; margin-top:12px;}
+  .prod-list.open{display:block;}
+  .prod-row{display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-top:1px solid var(--line);}
+  .prod-name{font-size:14px; font-weight:500;}
+  .prod-price{font-size:12px; color:var(--muted); margin-top:2px;}
+  .badge{font-size:12px; font-weight:700; padding:5px 12px; border-radius:20px; white-space:nowrap;}
+  .badge.ok{background:rgba(46,139,87,.13); color:var(--ok);}
+  .badge.bad{background:rgba(193,68,60,.13); color:var(--bad);}
+  .empty{text-align:center; color:var(--muted); font-size:14px; padding:48px 20px;}
+  .loading{text-align:center; color:var(--muted); padding:30px; font-size:14px;}
+  .admin-link{text-align:center; margin-top:32px;}
+  .admin-link a{color:var(--primary); font-size:13px; text-decoration:none; font-weight:600;}
+  .count{font-size:11.5px; color:var(--muted); margin-top:2px;}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🛒 BorMi?</h1>
+  <p>Do'konga bormasdan — kerakli narsa borligini biling</p>
+</header>
+
+<div class="search-wrap">
+  <div class="search-box">
+    <input type="text" id="searchInput" placeholder="🔍  Mahsulot qidiring (masalan: non, yog'...)">
+  </div>
+</div>
+
+<main>
+  <div class="sec-title">Do'konlar ro'yxati</div>
+  <div id="storesContainer"><div class="loading">⏳ Yuklanmoqda...</div></div>
+  <div class="admin-link"><a href="admin.html">🔧 Do'konchi? Shu yerdan kiring</a></div>
+</main>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script>
+  firebase.initializeApp({
+    apiKey: "AIzaSyDPNsdIPs93TNl92Xpawcg6VV3T6KXypdk",
+    authDomain: "bormi-e7de0.firebaseapp.com",
+    projectId: "bormi-e7de0",
+    storageBucket: "bormi-e7de0.firebasestorage.app",
+    messagingSenderId: "196690421726",
+    appId: "1:196690421726:web:8e4d498a323ad3b551df4f"
+  });
+  const db = firebase.firestore();
+
+  let allStores = [];
+
+  async function loadStores(){
+    try {
+      const snap = await db.collection('dokonlar').get();
+      allStores = [];
+      for (const doc of snap.docs){
+        const d = doc.data();
+        const pSnap = await db.collection('dokonlar').doc(doc.id).collection('mahsulotlar').get();
+        const mahsulotlar = pSnap.docs.map(p => ({id:p.id,...p.data()}));
+        allStores.push({id:doc.id, nomi:d.nomi, manzil:d.manzil||'', mahsulotlar});
+      }
+      render(allStores);
+    } catch(e){
+      document.getElementById('storesContainer').innerHTML = '<div class="empty">❌ Ulanishda xatolik. Internetni tekshiring.</div>';
+    }
+  }
+
+  function render(stores){
+    const c = document.getElementById('storesContainer');
+    if(!stores.length){ c.innerHTML='<div class="empty">🏪 Hozircha do\'konlar yo\'q</div>'; return; }
+    c.innerHTML='';
+    stores.forEach(store => {
+      const card = document.createElement('div');
+      card.className='store-card';
+      const borCount = store.mahsulotlar.filter(m=>m.mavjud).length;
+      const total = store.mahsulotlar.length;
+      card.innerHTML=`
+        <span class="chevron" id="chev-${store.id}">›</span>
+        <h3>${esc(store.nomi)}</h3>
+        ${store.manzil ? `<div class="store-addr">📍 ${esc(store.manzil)}</div>` : ''}
+        <div class="count">${total ? `${borCount}/${total} mahsulot mavjud` : 'Mahsulotlar yo\'q'}</div>
+        <div class="prod-list" id="pl-${store.id}"></div>
+      `;
+      card.addEventListener('click', ()=>{
+        const pl = card.querySelector('.prod-list');
+        const chev = card.querySelector('.chevron');
+        const isOpen = pl.classList.toggle('open');
+        chev.classList.toggle('open', isOpen);
+        if(isOpen && !pl.dataset.done){
+          fillProds(pl, store.mahsulotlar);
+          pl.dataset.done='1';
+        }
+      });
+      c.appendChild(card);
+    });
+  }
+
+  function fillProds(el, list){
+    if(!list.length){ el.innerHTML='<div class="prod-row"><span style="color:var(--muted);font-size:13px">Mahsulot qo\'shilmagan</span></div>'; return; }
+    el.innerHTML = list.map(m=>`
+      <div class="prod-row">
+        <div>
+          <div class="prod-name">${esc(m.nomi)}</div>
+          ${m.narx?`<div class="prod-price">${esc(m.narx)} so'm</div>`:''}
+        </div>
+        <span class="badge ${m.mavjud?'ok':'bad'}">${m.mavjud?'✅ Bor':'❌ Yo\'q'}</span>
+      </div>`).join('');
+  }
+
+  const searchInput = document.getElementById('searchInput');
+  searchInput.addEventListener('input', ()=>{
+    const q = searchInput.value.trim().toLowerCase();
+    if(!q){ render(allStores); return; }
+    const filtered = allStores.map(s=>({...s, mahsulotlar:s.mahsulotlar.filter(m=>m.nomi.toLowerCase().includes(q))})).filter(s=>s.mahsulotlar.length);
+    render(filtered);
+    setTimeout(()=>{
+      document.querySelectorAll('.prod-list').forEach(pl=>{
+        pl.classList.add('open');
+        const sid = pl.id.replace('pl-','');
+        const store = filtered.find(s=>s.id===sid);
+        if(store && !pl.dataset.done){ fillProds(pl, store.mahsulotlar); pl.dataset.done='1'; }
+        const chev = document.getElementById('chev-'+sid);
+        if(chev) chev.classList.add('open');
+      });
+    },0);
+  });
+
+  function esc(s){ const d=document.createElement('div'); d.textContent=s||''; return d.innerHTML; }
+
+  loadStores();
+</script>
+</body>
+</html>
