@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BorMi — Do'kon paneli</title>
+<style>
+  :root{
+    --bg:#F0F7F4; --panel:#FFFFFF; --ink:#16241D; --muted:#5B6B62;
+    --primary:#1B4D3E; --primary-dark:#123529; --accent:#E8A33D;
+    --ok:#2E8B57; --bad:#C1443C; --line:#E3E9E5; --radius:16px;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  body{margin:0; font-family:system-ui,-apple-system,sans-serif; background:var(--bg); color:var(--ink); padding-bottom:60px;}
+  h1,h2,h3{margin:0;}
+  header{background:linear-gradient(135deg,var(--primary),var(--primary-dark)); color:#fff; padding:24px 20px;}
+  header h1{font-size:20px; font-weight:700;}
+  header p{margin:4px 0 0; font-size:12.5px; opacity:.8;}
+  main{max-width:520px; margin:0 auto; padding:16px;}
+  .panel{background:var(--panel); border-radius:var(--radius); padding:18px; margin-bottom:14px; box-shadow:0 2px 8px rgba(20,40,30,.07); border:1.5px solid var(--line);}
+  .panel h3{font-size:15px; font-weight:700; margin-bottom:14px;}
+  label{font-size:12px; color:var(--muted); display:block; margin:12px 0 4px; font-weight:600; text-transform:uppercase; letter-spacing:.04em;}
+  input[type=text], input[type=password]{
+    width:100%; padding:12px 13px; border:1.5px solid var(--line);
+    border-radius:10px; font-size:14px; font-family:inherit; outline:none; color:var(--ink);
+  }
+  input:focus{border-color:var(--primary);}
+  .btn{
+    background:var(--primary); color:#fff; border:none; padding:13px 18px;
+    border-radius:10px; font-size:14px; font-weight:700; cursor:pointer; width:100%; margin-top:14px; font-family:inherit;
+  }
+  .btn:active{opacity:.85;}
+  .btn.outline{background:transparent; color:var(--primary); border:1.5px solid var(--primary);}
+  .btn.danger{background:var(--bad);}
+  .btn.accent{background:var(--accent); color:#fff;}
+  .btn.small{padding:9px 14px; font-size:13px; margin-top:8px;}
+  .prod-row{display:flex; align-items:center; padding:11px 0; border-top:1px solid var(--line); gap:8px;}
+  .prod-info{flex:1; min-width:0;}
+  .prod-name{font-size:14px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .prod-price{font-size:12px; color:var(--muted); margin-top:1px;}
+  .toggle-btn{
+    flex-shrink:0; border:none; cursor:pointer; border-radius:20px;
+    padding:7px 14px; font-size:12.5px; font-weight:700; font-family:inherit;
+  }
+  .toggle-btn.ok{background:rgba(46,139,87,.13); color:var(--ok);}
+  .toggle-btn.bad{background:rgba(193,68,60,.13); color:var(--bad);}
+  .del-btn{flex-shrink:0; background:none; border:none; color:var(--muted); font-size:18px; cursor:pointer; padding:4px 6px; line-height:1;}
+  .del-btn:active{color:var(--bad);}
+  .hidden{display:none;}
+  .muted-text{color:var(--muted); font-size:13px; text-align:center; padding:16px 0;}
+  .store-badge{display:inline-block; background:rgba(27,77,62,.1); color:var(--primary); font-size:13px; font-weight:700; padding:6px 14px; border-radius:20px; margin-bottom:10px;}
+  .back-link{text-align:center; margin-top:20px;}
+  .back-link a{color:var(--primary); font-size:13px; text-decoration:none; font-weight:600;}
+  .info-box{background:rgba(232,163,61,.12); border:1px solid rgba(232,163,61,.4); border-radius:10px; padding:12px 14px; font-size:12.5px; color:#7a5200; margin-bottom:4px; line-height:1.5;}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🔧 BorMi — Panel</h1>
+  <p>Do'konchi boshqaruv sahifasi</p>
+</header>
+
+<main>
+
+  <!-- LOGIN -->
+  <div class="panel" id="loginPanel">
+    <h3>Do'kon sifatida kirish</h3>
+    <div class="info-box">
+      ℹ️ Yangi do'kon bo'lsa — nom va PIN o'ylab kiriting, avtomatik ro'yxatdan o'tadi.<br>
+      Mavjud do'kon bo'lsa — nom va PIN to'g'ri kiriting.
+    </div>
+    <label>Do'kon nomi</label>
+    <input type="text" id="inName" placeholder="Masalan: Aziz aka do'koni" autocomplete="off">
+    <label>PIN kod (4-10 ta raqam)</label>
+    <input type="password" id="inPin" placeholder="Masalan: 1234" maxlength="10" autocomplete="off">
+    <button class="btn" id="loginBtn">Kirish</button>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div class="panel hidden" id="dashPanel">
+    <div class="store-badge" id="storeLabel"></div>
+    <label>Manzil (ko'cha, mo'ljal)</label>
+    <input type="text" id="inAddr" placeholder="Masalan: Navruz ko'chasi 12">
+    <button class="btn small outline" id="saveAddrBtn">📍 Manzilni saqlash</button>
+    <button class="btn small outline" id="logoutBtn" style="margin-top:6px">🚪 Chiqish</button>
+  </div>
+
+  <!-- MAHSULOT QO'SHISH -->
+  <div class="panel hidden" id="addPanel">
+    <h3>➕ Mahsulot qo'shish</h3>
+    <label>Mahsulot nomi</label>
+    <input type="text" id="inProdName" placeholder="Masalan: Non, Guruch, Yog'...">
+    <label>Narxi (ixtiyoriy)</label>
+    <input type="text" id="inProdPrice" placeholder="Masalan: 3500">
+    <button class="btn accent" id="addProdBtn">Qo'shish</button>
+  </div>
+
+  <!-- MAHSULOTLAR -->
+  <div class="panel hidden" id="listPanel">
+    <h3>📦 Mahsulotlaringiz</h3>
+    <div id="prodList"><div class="muted-text">Hali mahsulot qo'shilmagan</div></div>
+  </div>
+
+  <div class="back-link"><a href="index.html">← Xaridorlar sahifasiga qaytish</a></div>
+
+</main>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script>
+  firebase.initializeApp({
+    apiKey: "AIzaSyDPNsdIPs93TNl92Xpawcg6VV3T6KXypdk",
+    authDomain: "bormi-e7de0.firebaseapp.com",
+    projectId: "bormi-e7de0",
+    storageBucket: "bormi-e7de0.firebasestorage.app",
+    messagingSenderId: "196690421726",
+    appId: "1:196690421726:web:8e4d498a323ad3b551df4f"
+  });
+  const db = firebase.firestore();
+
+  let storeId = null, storeName = null;
+
+  const loginPanel  = document.getElementById('loginPanel');
+  const dashPanel   = document.getElementById('dashPanel');
+  const addPanel    = document.getElementById('addPanel');
+  const listPanel   = document.getElementById('listPanel');
+
+  // Oldingi sessiyani eslash
+  const saved = localStorage.getItem('bormi_session');
+  if(saved){ const s=JSON.parse(saved); storeId=s.id; storeName=s.nomi; enterDash(); }
+
+  document.getElementById('loginBtn').addEventListener('click', async ()=>{
+    const nomi = document.getElementById('inName').value.trim();
+    const pin  = document.getElementById('inPin').value.trim();
+    if(!nomi || !pin){ alert('Nom va PIN kiriting'); return; }
+    if(!/^\d{4,10}$/.test(pin)){ alert('PIN faqat raqamlardan iborat bo\'lishi kerak (4-10 ta)'); return; }
+
+    const id = nomi.toLowerCase().replace(/\s+/g,'-').replace(/[^\w\-]/g,'').substring(0,40) || 'dokon';
+    const ref = db.collection('dokonlar').doc(id);
+
+    try {
+      const doc = await ref.get();
+      if(doc.exists){
+        if(doc.data().pin !== pin){ alert('❌ PIN noto\'g\'ri! Bu nom allaqachon band.'); return; }
+      } else {
+        await ref.set({ nomi, pin, manzil:'' });
+      }
+      storeId=id; storeName=nomi;
+      localStorage.setItem('bormi_session', JSON.stringify({id, nomi}));
+      enterDash();
+    } catch(e){ alert('Xatolik yuz berdi. Internetni tekshiring.'); }
+  });
+
+  document.getElementById('logoutBtn').addEventListener('click', ()=>{
+    localStorage.removeItem('bormi_session');
+    location.reload();
+  });
+
+  document.getElementById('saveAddrBtn').addEventListener('click', async ()=>{
+    const addr = document.getElementById('inAddr').value.trim();
+    await db.collection('dokonlar').doc(storeId).update({ manzil: addr });
+    alert('✅ Manzil saqlandi!');
+  });
+
+  async function enterDash(){
+    loginPanel.classList.add('hidden');
+    dashPanel.classList.remove('hidden');
+    addPanel.classList.remove('hidden');
+    listPanel.classList.remove('hidden');
+    document.getElementById('storeLabel').textContent = '🏪 ' + storeName;
+    try {
+      const doc = await db.collection('dokonlar').doc(storeId).get();
+      document.getElementById('inAddr').value = doc.data().manzil || '';
+    } catch(e){}
+    loadProds();
+  }
+
+  document.getElementById('addProdBtn').addEventListener('click', async ()=>{
+    const nomi  = document.getElementById('inProdName').value.trim();
+    const narx  = document.getElementById('inProdPrice').value.trim();
+    if(!nomi){ alert('Mahsulot nomini kiriting'); return; }
+    await db.collection('dokonlar').doc(storeId).collection('mahsulotlar').add({ nomi, narx:narx||'', mavjud:true });
+    document.getElementById('inProdName').value='';
+    document.getElementById('inProdPrice').value='';
+    loadProds();
+  });
+
+  async function loadProds(){
+    const el = document.getElementById('prodList');
+    el.innerHTML = '<div class="muted-text">⏳ Yuklanmoqda...</div>';
+    const snap = await db.collection('dokonlar').doc(storeId).collection('mahsulotlar').orderBy('nomi').get().catch(async ()=>{
+      return await db.collection('dokonlar').doc(storeId).collection('mahsulotlar').get();
+    });
+    if(snap.empty){ el.innerHTML='<div class="muted-text">Hali mahsulot yo\'q. Yuqoridan qo\'shing.</div>'; return; }
+    el.innerHTML='';
+    snap.forEach(doc=>{
+      const p = doc.data();
+      const row = document.createElement('div');
+      row.className='prod-row';
+      row.innerHTML=`
+        <div class="prod-info">
+          <div class="prod-name">${esc(p.nomi)}</div>
+          ${p.narx?`<div class="prod-price">${esc(p.narx)} so'm</div>`:''}
+        </div>
+        <button class="toggle-btn ${p.mavjud?'ok':'bad'}" data-id="${doc.id}" data-val="${p.mavjud}">
+          ${p.mavjud?'✅ Bor':'❌ Yo\'q'}
+        </button>
+        <button class="del-btn" data-id="${doc.id}" title="O'chirish">🗑</button>
+      `;
+      row.querySelector('.toggle-btn').addEventListener('click', async(e)=>{
+        e.stopPropagation();
+        const newVal = e.target.dataset.val !== 'true';
+        await db.collection('dokonlar').doc(storeId).collection('mahsulotlar').doc(doc.id).update({mavjud:newVal});
+        loadProds();
+      });
+      row.querySelector('.del-btn').addEventListener('click', async(e)=>{
+        e.stopPropagation();
+        if(!confirm(`"${p.nomi}" ni o'chirasizmi?`)) return;
+        await db.collection('dokonlar').doc(storeId).collection('mahsulotlar').doc(doc.id).delete();
+        loadProds();
+      });
+      el.appendChild(row);
+    });
+  }
+
+  function esc(s){ const d=document.createElement('div'); d.textContent=s||''; return d.innerHTML; }
+</script>
+</body>
+      </html>
